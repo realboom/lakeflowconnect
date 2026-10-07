@@ -105,6 +105,13 @@ schema evolution (which permanently adds a column — and shows your retry polic
 🗣️ A new field appeared and the table evolved on its own — the task **retry** turned a one-time schema
 handshake into a hands-off success. (This *is* the Part E6 retries lesson, shown live.)
 
+> ⚠️ **If the run just *succeeds* with no failed attempt**, `risk_tier` was already in Auto Loader's schema
+> from a previous run — so there's no "new column" to record and nothing to retry. The fail→retry only
+> fires when `risk_tier` is **new**. To replay cleanly: run **`reset`** (your schema) — it clears the
+> landing files **and** the `_autoloader` checkpoint/schema **and** drops `bronze_sftp_eligibility` — then
+> run **Part B** (re-establishes the schema *without* `risk_tier`), then C2. (Clearing just the landing
+> files isn't enough; the evolved schema lives in the checkpoint.)
+
 ---
 
 ## Part E — Orchestration (Lakeflow Pipelines + Jobs)
