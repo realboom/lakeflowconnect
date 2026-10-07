@@ -155,9 +155,12 @@ Make the silver pipeline run **automatically whenever new bronze data lands** �
      are in **`hh mm`** (not seconds) — leave both at **`00h 00m`** so the job fires as soon as new data
      lands.
    - **Save**.
-5. **Test it:** run `generate_data` (scenario *Part B*) then `part_b_autoloader` so new rows commit to
-   `bronze_sftp_eligibility`. Within ~a minute the job **fires on its own** — open it and you'll see a run
-   whose origin is *"Triggered by table update"*, which refreshes `silver_eligibility`.
+5. **Test it:**
+   - Click the **Runs** tab (next to **Tasks**, just under the job name) so you can watch runs appear.
+   - In another browser tab, run `generate_data` (scenario *Part B*) then `part_b_autoloader` so new rows
+     commit to `bronze_sftp_eligibility`.
+   - Within ~a minute a run **shows up on the Runs tab on its own** — its origin reads *"Triggered by
+     table update"* — and it refreshes `silver_eligibility`. (No one pressed Run now.)
 
 🗣️ The trigger baselines when you create it and fires only on **new** commits — so do the fresh bronze load *after* you've set up the trigger, or it won't have anything new to react to.
 
