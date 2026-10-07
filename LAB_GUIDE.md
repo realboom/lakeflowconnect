@@ -85,7 +85,9 @@ schema evolution (which permanently adds a column — and shows your retry polic
 2. **Run now** your `sftp_ingest_<you>` job. The bad values can't cast to DATE, so Auto Loader **rescues**
    them: the row still ingests with `eff_date = NULL`, original value parked in `_rescued_data`. One clean
    attempt — no retry needed (no schema change).
-3. Confirm: `SELECT member_id, eff_date, _rescued_data FROM <catalog>.<you>.bronze_sftp_eligibility WHERE _rescued_data IS NOT NULL;`
+3. **See it without running anything:** open the run → click the **`ingest`** task → scroll the notebook
+   output. The ingest notebook already displays the **rescued rows** (`_rescued_data` populated, `eff_date`
+   NULL) in its last cell. (No separate query needed.)
 
 🗣️ A malformed value didn't crash the pipeline or get silently dropped — it's captured for audit/backfill.
 
@@ -96,7 +98,9 @@ schema evolution (which permanently adds a column — and shows your retry polic
    **Attempt 1 fails** (Auto Loader stops to *record* the new column), then the **retry — Attempt 2 —
    succeeds**, with `risk_tier` added to the table (existing rows `NULL`). The fail-then-recover is visible
    right in the run.
-3. Confirm: `SELECT risk_tier, count(*) FROM <catalog>.<you>.bronze_sftp_eligibility GROUP BY risk_tier;`
+3. **See the new column:** click into the run → the **`ingest`** task → the **Attempt 2 (succeeded)**
+   notebook output shows the data **with the new `risk_tier` column** populated. (Attempt 1 is right there
+   too, showing the schema-change failure — nice to point at.)
 
 🗣️ A new field appeared and the table evolved on its own — the task **retry** turned a one-time schema
 handshake into a hands-off success. (This *is* the Part E6 retries lesson, shown live.)
