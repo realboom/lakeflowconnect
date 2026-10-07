@@ -7,15 +7,22 @@ Work top to bottom. Everything lives in **your** schema inside the `dev-sh-train
 - Your schema: whatever you set in `00_setup` (e.g. `jane_doe`)
 - Landing volume: `/Volumes/dev-sh-training/<you>/landing/`
 
-> Tip: in SQL notebooks the widget appears at the top as `schema`. In Python notebooks set the
-> `schema` text widget. The value is substituted everywhere via `${schema}` (SQL) or the widget (Python).
+> **⚠️ How to use every notebook in this lab — read first.** The widgets (`schema`, `scenario`, …)
+> are defined in the **first cell**. You must **run that first cell** before anything else so the
+> widget boxes appear at the top of the notebook. Then fill in your **`schema`** (and any other
+> options) and run the remaining cells (or **Run all**). If you skip the first cell, the widgets
+> never appear, and the notebook falls back to the placeholder default and stops with an error.
+>
+> The value you type is substituted everywhere automatically — via `${schema}` in SQL notebooks and
+> via the widget in Python notebooks.
 
 ---
 
 ## Setup (once)
 1. Add this repo as a **Git folder** (`Workspace → Create → Git folder`, URL
    `https://github.com/realboom/lakeflowconnect`).
-2. Open **`notebooks/00_setup`**, set **`schema`** to your name, **Run all**.
+2. Open **`notebooks/00_setup`**, **run the first cell** so the `schema` widget appears, set it to
+   your name, then **Run all**.
    You now have a schema and a `landing` volume with `filedrop/` and `sftp/` subfolders.
 
 ---
