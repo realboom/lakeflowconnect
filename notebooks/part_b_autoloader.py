@@ -38,7 +38,7 @@ q = (spark.readStream.format("cloudFiles")
         .option("checkpointLocation", f"{base}/_autoloader/checkpoint")
         .option("mergeSchema", "true")
         .trigger(availableNow=True)                          # process all available files, then stop
-        .toTable(f"{CATALOG}.`{schema}`.bronze_sftp_eligibility"))
+        .toTable(tbl))
 q.awaitTermination()
 print("Auto Loader run complete.")
 
