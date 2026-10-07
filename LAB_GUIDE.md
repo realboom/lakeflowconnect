@@ -168,7 +168,8 @@ Make the silver pipeline run **automatically whenever new bronze data lands** �
 
 ### E3 — The DAG: gold → report → notify (with a conditional branch)
 Create a multi-task job.
-1. **Jobs & Pipelines** → blue **Create** button → **Job**, name it `eligibility_gold`.
+1. **Jobs & Pipelines** → blue **Create** button → **Job**, name it `eligibility_gold_<you>`
+   (include your name — jobs are workspace-global, so a bare `eligibility_gold` would collide with everyone else's).
 2. Task **`gold`** — Type Notebook → `notebooks/gold_eligibility_summary`, param `schema` = your schema.
    Under **Advanced → Retries**, set **Max retries = 2**.
 3. Task **`report`** — Type **Notebook** → `notebooks/eligibility_report`, param `schema` = your schema.
@@ -182,7 +183,7 @@ Create a multi-task job.
 ### E4 — Repair / partial re-run (recover from a schema change)
 A realistic failure: someone renames a column upstream and the downstream report breaks.
 1. Open **`gold_eligibility_summary`** and rename the output column **`member_count` → `enrolled_members`**, save.
-2. **Run** `eligibility_gold`. → `gold` **succeeds** (table rebuilt with the new name), but `report`
+2. **Run** `eligibility_gold_<you>`. → `gold` **succeeds** (table rebuilt with the new name), but `report`
    **fails**: `UNRESOLVED_COLUMN … member_count … Did you mean 'enrolled_members'?`, and `notify_fail` runs.
 3. **Fix** `eligibility_report`: change `member_count` → `enrolled_members`, save.
 4. On the failed run click **Repair run**. → **`gold` is skipped** (already built), only `report` +
@@ -193,7 +194,7 @@ A realistic failure: someone renames a column upstream and the downstream report
 
 ### E5 — For each (fan-out + concurrency)
 Run a task once per line of business, in parallel.
-1. **Jobs & Pipelines** → blue **Create** button → **Job** `eligibility_by_lob`. Add a **For each** task.
+1. **Jobs & Pipelines** → blue **Create** button → **Job** `eligibility_by_lob_<you>`. Add a **For each** task.
    - **Inputs:** `["Commercial","Medicaid","Medicare Advantage","Individual"]`
    - **Concurrency:** `4`
 2. **Add a task to loop over** → Notebook `notebooks/for_each_lob`, params `schema` = your schema and
