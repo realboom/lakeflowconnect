@@ -91,19 +91,28 @@ Same `bronze_sftp_eligibility` pipeline from Part B. We show the two ways Auto L
 Now we orchestrate the eligibility data you just created. You'll build **one pipeline** and a few **jobs**
 by hand.
 
-### E1 — The silver pipeline (Spark Declarative Pipeline)
-Create a pipeline whose source is `notebooks/silver_eligibility`.
-1. **Pipelines → Create pipeline** (ETL / Lakeflow Declarative Pipeline).
-2. **Source code:** select `notebooks/silver_eligibility` from your Git folder.
-3. **Destination:** Catalog = `dev-sh-training`, Schema = **your** schema.
-4. **Configuration:** add a key **`schema`** with value = **your** schema (the source reads
-   `${schema}` to find your bronze table).
-5. **Serverless** compute. Create, then **Run** the pipeline once.
-   → builds `silver_eligibility` (streaming table) from `bronze_sftp_eligibility`.
+**Where you build these — read this once.** In the Databricks **left sidebar**, find **Jobs & Pipelines**.
+Tip: **right-click it and open in a new browser tab**, so you can keep this guide open side-by-side.
+On the **Jobs & Pipelines** page, click the blue **Create** button (it has a dropdown). The dropdown lets
+you pick what to build — **ETL Pipeline** or **Job**. Each step below tells you which one to choose:
+- **E1** builds an **ETL Pipeline** (that's what a Spark Declarative Pipeline is).
+- **E2, E3, E5** build **Jobs**.
+
+### E1 — The silver pipeline (an ETL Pipeline / Spark Declarative Pipeline)
+This builds a streaming `silver_eligibility` table from your Auto Loader bronze.
+1. **Jobs & Pipelines** (left sidebar) → blue **Create** button → **ETL Pipeline**.
+2. Give the pipeline a **name** (e.g. `silver_eligibility_<you>`) and choose **Serverless**.
+3. **Source code:** click **Add** / **Add source code** and select `notebooks/silver_eligibility` from
+   your Git folder.
+4. **Default catalog / target schema:** Catalog = `dev-sh-training`, Schema = **your** schema.
+5. **Configuration** (in the pipeline Settings → *Advanced* → *Configuration*): add a key **`schema`**
+   with the value = **your** schema. (The source reads `${schema}` to find your bronze table.)
+6. Click **Create**, then **Run** the pipeline once → it builds `silver_eligibility` (a streaming table)
+   from `bronze_sftp_eligibility`.
 
 ### E2 — Table-update trigger (event-driven)
 Make the silver pipeline run **automatically when new bronze data lands**.
-1. **Jobs → Create job.** Add one task:
+1. **Jobs & Pipelines** → blue **Create** button → **Job**. Add one task:
    - Task name `refresh_silver`, Type **Pipeline**, select your silver pipeline.
 2. **Add a trigger** on the job → type **Table update** → table
    `dev-sh-training.<you>.bronze_sftp_eligibility`, condition **`ANY_UPDATED`**.
@@ -115,7 +124,7 @@ Make the silver pipeline run **automatically when new bronze data lands**.
 
 ### E3 — The DAG: gold → report → notify (with a conditional branch)
 Create a multi-task job.
-1. **Jobs → Create job**, name it `eligibility_gold`.
+1. **Jobs & Pipelines** → blue **Create** button → **Job**, name it `eligibility_gold`.
 2. Task **`gold`** — Type Notebook → `notebooks/gold_eligibility_summary`, param `schema` = your schema.
    Under **Advanced → Retries**, set **Max retries = 2**.
 3. Task **`report`** — Type **Notebook** → `notebooks/eligibility_report`, param `schema` = your schema.
@@ -140,7 +149,7 @@ A realistic failure: someone renames a column upstream and the downstream report
 
 ### E5 — For each (fan-out + concurrency)
 Run a task once per line of business, in parallel.
-1. **Jobs → Create job** `eligibility_by_lob`. Add a **For each** task.
+1. **Jobs & Pipelines** → blue **Create** button → **Job** `eligibility_by_lob`. Add a **For each** task.
    - **Inputs:** `["Commercial","Medicaid","Medicare Advantage","Individual"]`
    - **Concurrency:** `4`
 2. **Add a task to loop over** → Notebook `notebooks/for_each_lob`, params `schema` = your schema and
