@@ -175,14 +175,29 @@ Make the silver pipeline run **automatically whenever new bronze data lands** �
 Create a multi-task job.
 1. **Jobs & Pipelines** → blue **Create** button → **Job**, name it `eligibility_gold_<you>`
    (include your name — jobs are workspace-global, so a bare `eligibility_gold` would collide with everyone else's).
-2. Task **`gold`** — Type Notebook → `notebooks/gold_eligibility_summary`, param `schema` = your schema.
-   Under **Advanced → Retries**, set **Max retries = 2**.
-3. Task **`report`** — Type **Notebook** → `notebooks/eligibility_report`, param `schema` = your schema.
-   **Depends on** `gold`.
-4. Task **`notify_pass`** — Notebook `notebooks/notify`, param `result` = `pass`. Depends on `report`.
-   **Run if** = **All succeeded**.
-5. Task **`notify_fail`** — Notebook `notebooks/notify`, param `result` = `fail`. Depends on `report`.
-   **Run if** = **At least one failed**.
+> **Task fields — set these, ignore the rest.** Each task's config panel has a lot of fields; you only
+> touch a few:
+> - **Task name**, **Type** = Notebook, **Source** = Workspace, **Path** (via the Select Notebook dialog).
+> - **Cluster** → open the dropdown. If **Serverless** is offered, pick it. **Jobs serverless may not be
+>   enabled in this workspace** — if there's no Serverless option, choose the existing **All-Purpose
+>   Compute** cluster (already running = fastest), or **Add new job cluster** if no shared cluster is
+>   available (works, but ~5-min cold start). **Use the same cluster for every task in the job.**
+> - **Parameters** → click **+ Add** and enter the Key/Value shown in each step (this is how the notebook
+>   gets your `schema`).
+> - **Retries** → only where a step says so.
+>
+> Leave **Dependent libraries, Notifications, Metric thresholds, Tags, Job health, Permissions, and
+> Advanced settings** at their defaults.
+
+2. Task **`gold`** — Type **Notebook**, Path `notebooks/gold_eligibility_summary`, **Cluster** = your
+   compute (see note). **Parameters:** `+ Add` → Key `schema`, Value = your schema. **Retries:** `+ Add`
+   → **Max retries = 2**.
+3. Task **`report`** — `+ Add task`, Type **Notebook**, Path `notebooks/eligibility_report`, same cluster,
+   Parameter `schema` = your schema. **Depends on:** `gold`.
+4. Task **`notify_pass`** — Type **Notebook**, Path `notebooks/notify`, same cluster, Parameter `result`
+   = `pass`. **Depends on:** `report`. **Run if** = **All succeeded**.
+5. Task **`notify_fail`** — Type **Notebook**, Path `notebooks/notify`, same cluster, Parameter `result`
+   = `fail`. **Depends on:** `report`. **Run if** = **At least one failed**.
 6. **Run** the job → `gold` → `report` → `notify_pass` (and `notify_fail` is skipped). Green path.
 
 ### E4 — Repair / partial re-run (recover from a schema change)
