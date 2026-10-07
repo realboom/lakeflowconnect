@@ -44,7 +44,7 @@ result = spark.sql(f"""
 COPY INTO {tbl}
 FROM '{src}'
 FILEFORMAT = CSV
-FORMAT_OPTIONS ('header' = 'true', 'inferSchema' = 'true')
+FORMAT_OPTIONS ('header' = 'true', 'inferSchema' = 'false')
 COPY_OPTIONS ('mergeSchema' = 'true')
 """)
 display(result)
