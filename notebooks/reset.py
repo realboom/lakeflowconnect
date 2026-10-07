@@ -17,7 +17,7 @@ assert schema and schema != "firstname_lastname", "Set the 'schema' widget first
 base = f"/Volumes/{CATALOG}/{schema}/landing"
 
 for t in ["bronze_file_eligibility", "bronze_sftp_eligibility", "silver_eligibility",
-          "gold_eligibility_summary", "eligibility_report"]:
+          "silver_eligibility_current", "gold_eligibility_summary", "eligibility_report"]:
     spark.sql(f"DROP TABLE IF EXISTS `{CATALOG}`.`{schema}`.{t}")
 
 # drop the per-LOB for-each outputs

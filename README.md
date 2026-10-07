@@ -42,7 +42,8 @@ in the UI.
 | `generate_data` | Generate synthetic files for each scenario (widget: schema, scenario, num_rows) |
 | `part_a_copy_into` | Part A — `COPY INTO` into `bronze_file_eligibility` |
 | `part_b_autoloader` | Part B/C — Auto Loader into `bronze_sftp_eligibility` |
-| `silver_eligibility` | Part E — pipeline source for the `silver_eligibility` streaming table |
+| `silver_eligibility` | Part E — pipeline source for the `silver_eligibility` streaming table (append) |
+| `silver_eligibility_scd` | Part E7 (optional) — AUTO CDC pipeline source: upsert by `member_id` → `silver_eligibility_current` |
 | `gold_eligibility_summary` | Part E — gold aggregate (DAG task) |
 | `eligibility_report` | Part E — downstream consumer (repair-demo task) |
 | `notify` | Part E — notification placeholder (DAG task) |

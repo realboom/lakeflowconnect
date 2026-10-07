@@ -210,6 +210,31 @@ exactly what makes the Part C **schema-evolution** handshake complete in a singl
 (Auto Loader stops once to record the new column; the retry picks it up). Put a retry on any task that
 ingests evolving files.
 
+### E7 — Incremental loading: upsert with AUTO CDC *(optional — a preview of the SDP workshop)*
+The E1 `silver_eligibility` table is **append-only**: re-send a member and you get a **duplicate** row.
+A "current state" table (eligibility, customer, account) usually wants **one row per member, updated in
+place**. Databricks does this with **AUTO CDC** (the SQL `APPLY CHANGES` pattern) — you declare the
+**key** and a **sequence**, and Databricks writes the insert-or-update MERGE for you (no hand-coded MERGE,
+no full reload).
+
+1. Build a **second ETL Pipeline**, set up exactly like E1 (Create → ETL Pipeline → rename, e.g.
+   `silver_upsert_<you>` → **default catalog `dev-sh-training` + your schema** → Serverless), but paste
+   **`notebooks/silver_eligibility_scd`** as the source. It creates `silver_eligibility_current`
+   (one upserted row per `member_id`). Click **Run**.
+2. Note a few members and their plans:
+   `SELECT member_id, plan_code FROM silver_eligibility_current ORDER BY member_id LIMIT 5;`
+3. **Send updates:** `generate_data` → scenario **`Part E - member update (upsert)`** → Run all. It
+   re-sends existing members with a **new `plan_code`**. Then run **`part_b_autoloader`** so the changes
+   land in bronze.
+4. **Run the AUTO CDC pipeline again** (or wire a table-update trigger like E2 to fire it). Re-check the
+   same members — their `plan_code` has **changed in place**: same row count, **no duplicates**.
+5. **See the contrast:** the append `silver_eligibility` from E1, fed the same update, shows **two rows**
+   for that member (old + new). Append vs. upsert is the core incremental-loading choice.
+
+**The three pieces to call out:** `KEYS (member_id)` (match on the business key), `SEQUENCE BY ingested_at`
+(newest wins when a key repeats), `AUTO CDC INTO` (Databricks runs the MERGE). This is the foundation we go
+deep on in the SDP workshop — upserts, deletes (`APPLY AS DELETE`), and SCD Type 2 history.
+
 ---
 
 ## Clean up / start over
