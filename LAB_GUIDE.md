@@ -105,6 +105,8 @@ This builds a streaming `silver_eligibility` table from your Auto Loader bronze 
    pipeline editor on a new pipeline named like *New Pipeline 2026-…*, with a starter file
    `transformations/my_transformation.py`.
 2. **Rename the pipeline:** click its name at the top-left and change it to `silver_eligibility_<you>`.
+   If it asks **"Also rename the root folder?"**, click **Rename** (keeps the pipeline's workspace folder
+   name in sync — either choice works).
 3. **⚠️ Set the default catalog + schema — this is how the pipeline finds *your* tables.** Open the
    pipeline **Settings** (gear icon, or the **⋮** menu → *Settings*) and set:
    - **Default catalog = `dev-sh-training`**
