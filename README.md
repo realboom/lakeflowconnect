@@ -31,6 +31,7 @@ the shared `dev-sh-training` catalog, so you can all run the lab at the same tim
 3. Every notebook has a **`schema`** widget — set it to the same name each time.
 
 ## Then follow [LAB_GUIDE.md](./LAB_GUIDE.md)
+A print-friendly **[LAB_GUIDE.pdf](./LAB_GUIDE.pdf)** is included for handouts.
 It walks you through Parts A → B → C → E, including **how to create each pipeline and job by hand**
 in the UI.
 
