@@ -98,6 +98,11 @@ you pick what to build — **ETL Pipeline** or **Job**. Each step below tells yo
 - **E1** builds an **ETL Pipeline** (that's what a Spark Declarative Pipeline is).
 - **E2, E3, E5** build **Jobs**.
 
+**Picking a notebook for a task — read this once too.** Whenever a task asks for a notebook **Path**, the
+**Select Notebook** dialog opens. Navigate **Workspace → Users → _your user_ → `lakeflowconnect` →
+`notebooks`**, select the file, and click **Confirm**. (`lakeflowconnect` is the Git folder you cloned in
+Setup.) Below, a reference like `notebooks/gold_eligibility_summary` means that file in this folder.
+
 ### E1 — The silver pipeline (an ETL Pipeline / Spark Declarative Pipeline)
 This builds a streaming `silver_eligibility` table from your Auto Loader bronze (`bronze_sftp_eligibility`).
 
