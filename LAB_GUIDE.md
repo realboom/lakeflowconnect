@@ -59,7 +59,10 @@ that retry is exactly what lets a schema change self-heal in Part C.
      `notebooks/part_b_autoloader` (Select Notebook → Users → *you* → `lakeflowconnect` → `notebooks`).
    - **Cluster:** **Serverless** if offered, otherwise **All-Purpose Compute** (keep it warm — you'll run this a few times).
    - **Parameters:** `+ Add` → Key `schema`, Value = your schema.
-   - **Retries:** `+ Add` → **Max retries = 1**  ← needed for the schema-evolution self-heal in Part C.
+   - **Retries:** click the ✏️ edit → set **Retry at most = 1**, **and wait 30 seconds** (change the unit
+     from `mins` to `secs`). On serverless, also **uncheck "Enable serverless auto-optimization"** so your
+     one retry is the only retrier → **Confirm**. This single retry is what makes the schema change in
+     Part C self-heal (and stay a clean *one* retry).
    - **Create task**, then **Run now**.
 3. Open the **Runs** tab → the run succeeds and `bronze_sftp_eligibility` is loaded.
 4. Generate another Part B file (step 1) and **Run now** again → only the **new** file is picked up (checkpoint).
@@ -205,7 +208,7 @@ Create a multi-task job.
 
 2. Task **`gold`** — Type **Notebook**, Path `notebooks/gold_eligibility_summary`, **Cluster** = your
    compute (see note). **Parameters:** `+ Add` → Key `schema`, Value = your schema. **Retries:** `+ Add`
-   → **Max retries = 2**.
+   → **Retries:** edit → **Retry at most = 2**, wait 30 seconds.
 3. Task **`report`** — `+ Add task`, Type **Notebook**, Path `notebooks/eligibility_report`, same cluster,
    Parameter `schema` = your schema. **Depends on:** `gold`.
 4. Task **`notify_pass`** — Type **Notebook**, Path `notebooks/notify`, same cluster, Parameter `result`
@@ -245,8 +248,8 @@ downstream can handle, not the max. See the instructor runbook for the full FAQ.
 ### E6 — Retries
 You already saw retries do real work back in **Part C2**: when the `risk_tier` column appeared, your
 `sftp_ingest` job's **Attempt 1 failed** (Auto Loader stopping to record the new column) and the **retry,
-Attempt 2, succeeded** — the schema evolved with no manual intervention. That's the **Max retries = 1** you
-set on the ingest task (and **Max retries = 2** on `gold` in E3). Retries also heal transient infra
+Attempt 2, succeeded** — the schema evolved with no manual intervention. That's the **Retry at most = 1**
+you set on the ingest task (and **Retry at most = 2** on `gold` in E3). Retries also heal transient infra
 failures. Put a retry on any task that ingests evolving files or calls flaky external systems — then open a
 run and show the **Attempt 1 → Attempt 2** timeline.
 
