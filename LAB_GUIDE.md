@@ -118,8 +118,8 @@ Create a multi-task job.
 1. **Jobs → Create job**, name it `eligibility_gold`.
 2. Task **`gold`** — Type Notebook → `notebooks/gold_eligibility_summary`, param `schema` = your schema.
    Under **Advanced → Retries**, set **Max retries = 2**.
-3. Task **`report`** — Type SQL → **File** `notebooks/eligibility_report`, on your SQL warehouse,
-   param `schema` = your schema. **Depends on** `gold`.
+3. Task **`report`** — Type **Notebook** → `notebooks/eligibility_report`, param `schema` = your schema.
+   **Depends on** `gold`.
 4. Task **`notify_pass`** — Notebook `notebooks/notify`, param `result` = `pass`. Depends on `report`.
    **Run if** = **All succeeded**.
 5. Task **`notify_fail`** — Notebook `notebooks/notify`, param `result` = `fail`. Depends on `report`.
