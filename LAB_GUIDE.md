@@ -216,7 +216,10 @@ Create a multi-task job.
 
 ### E4 — Repair / partial re-run (recover from a schema change)
 A realistic failure: someone renames a column upstream and the downstream report breaks.
-1. Open **`gold_eligibility_summary`** and rename the output column **`member_count` → `enrolled_members`**, save.
+1. Open **`gold_eligibility_summary`** and rename **`member_count` → `enrolled_members`** in **both cells** —
+   the `count(*) AS member_count` in the `CREATE OR REPLACE TABLE` cell **and** the `ORDER BY member_count`
+   in the final check cell. Save. (If you miss the check cell, the `gold` task itself errors there and you
+   won't get the "gold succeeds / report fails" story.)
 2. **Run** `eligibility_gold_<you>`. → `gold` **succeeds** (table rebuilt with the new name), but `report`
    **fails**: `UNRESOLVED_COLUMN … member_count … Did you mean 'enrolled_members'?`, and `notify_fail` runs.
 3. **Fix** `eligibility_report`: change `member_count` → `enrolled_members`, save.
