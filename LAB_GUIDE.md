@@ -133,16 +133,29 @@ This builds a streaming `silver_eligibility` table from your Auto Loader bronze 
    `bronze_sftp_eligibility`. (Part B must have run first so your bronze table exists.)
 
 ### E2 — Table-update trigger (event-driven)
-Make the silver pipeline run **automatically when new bronze data lands**.
-1. **Jobs & Pipelines** → blue **Create** button → **Job**. Add one task:
-   - Task name `refresh_silver`, Type **Pipeline**, select your silver pipeline.
-2. **Add a trigger** on the job → type **Table update** → table
-   `dev-sh-training.<you>.bronze_sftp_eligibility`, condition **`ANY_UPDATED`**.
-   (Set min time between triggers = 60s.)
-3. Test it: run **`generate_data`** (Part B) then **`part_b_autoloader`** so new rows land in bronze.
-   Within ~a minute the job fires on its own (run origin: *"Triggered by table update"*) and refreshes silver.
+Make the silver pipeline run **automatically whenever new bronze data lands** — no schedule, no manual run.
 
-🗣️ The trigger baselines when you create it and fires on **new** commits — so make a fresh bronze load after you set it up.
+1. **Jobs & Pipelines** (left sidebar) → blue **Create** button → **Job**. You land in the job editor on
+   a job named like *New Job 2026-…*.
+2. **Rename the job:** click its name at the top-left → `silver_refresh_<you>`.
+3. **Add the task — and make it a *Pipeline* task** (the screen defaults to a Notebook card; don't use that):
+   - Click **+ Add another task type** (the blue button under "Add your first task").
+   - **Task name:** `refresh_silver`
+   - **Type:** choose **Pipeline** from the Type dropdown.
+   - **Pipeline:** select your `silver_eligibility_<you>` pipeline from E1.
+   - **Create task** / **Save task**.
+4. **Add the trigger** — it lives in the **right-hand panel**, not on the task:
+   - In the right-side **Job details** panel, find **Schedules & Triggers** and click **Add trigger**.
+   - **Trigger type:** **Table update**.
+   - **Table:** browse to `dev-sh-training` → **your schema** → **`bronze_sftp_eligibility`** and select it.
+   - Expand **Advanced** (optional) and set **minimum time between triggers = 60 seconds**. Leave the
+     condition at its default (fire when the table gets new data).
+   - **Save**.
+5. **Test it:** run `generate_data` (scenario *Part B*) then `part_b_autoloader` so new rows commit to
+   `bronze_sftp_eligibility`. Within ~a minute the job **fires on its own** — open it and you'll see a run
+   whose origin is *"Triggered by table update"*, which refreshes `silver_eligibility`.
+
+🗣️ The trigger baselines when you create it and fires only on **new** commits — so do the fresh bronze load *after* you've set up the trigger, or it won't have anything new to react to.
 
 ### E3 — The DAG: gold → report → notify (with a conditional branch)
 Create a multi-task job.
