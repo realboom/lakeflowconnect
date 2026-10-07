@@ -43,46 +43,60 @@ and already-loaded files are skipped. Simple, batch, great for "a file shows up,
 
 ---
 
-## Part B — Auto Loader ("SFTP" source, mimicked on a Volume)
+## Part B — Auto Loader as a Job ("SFTP" source), with a retry policy
 
-**Concept:** A vendor normally drops files on **SFTP**. We mimic that by landing pipe-delimited files
-in `landing/sftp/incoming/` and let **Auto Loader** (`cloudFiles`) ingest them incrementally. Auto
-Loader keeps a **checkpoint** of what it has processed and is built for continuously-arriving files.
+**Concept:** A vendor drops files on **SFTP**; we mimic that by landing pipe-delimited files in
+`landing/sftp/incoming/` and letting **Auto Loader** (`cloudFiles`) ingest them incrementally (it keeps a
+**checkpoint** of what it has already processed). We run Auto Loader as a **Job with a retry policy** — and
+that retry is exactly what lets a schema change self-heal in Part C.
 
-1. Open **`generate_data`**, scenario **`Part B - SFTP source (Auto Loader)`**, `num_rows` = 25, **Run all**.
-   → writes a **pipe-delimited** CSV to `landing/sftp/incoming/`.
-2. Open **`part_b_autoloader`**, set `schema`, **Run all**.
-   → creates `bronze_sftp_eligibility` and ingests the file. The last cells show the data.
-3. Generate another Part B file and re-run Part B → only the **new** file is picked up (checkpoint).
+1. **Generate data:** open **`generate_data`**, scenario **`Part B - SFTP source (Auto Loader)`**,
+   `num_rows` = 25, **Run all** → writes a pipe-delimited CSV to `landing/sftp/incoming/`.
+2. **Create the ingest job:**
+   - **Jobs & Pipelines** (left sidebar) → blue **Create** → **Job** → name it **`sftp_ingest_<you>`**
+     (jobs are workspace-global, so include your name).
+   - Add a task: **Task name** `ingest`, **Type** Notebook, **Source** Workspace, **Path**
+     `notebooks/part_b_autoloader` (Select Notebook → Users → *you* → `lakeflowconnect` → `notebooks`).
+   - **Cluster:** **Serverless** if offered, otherwise **All-Purpose Compute** (keep it warm — you'll run this a few times).
+   - **Parameters:** `+ Add` → Key `schema`, Value = your schema.
+   - **Retries:** `+ Add` → **Max retries = 1**  ← needed for the schema-evolution self-heal in Part C.
+   - **Create task**, then **Run now**.
+3. Open the **Runs** tab → the run succeeds and `bronze_sftp_eligibility` is loaded.
+4. Generate another Part B file (step 1) and **Run now** again → only the **new** file is picked up (checkpoint).
 
-✅ Takeaway: Auto Loader = incremental, checkpointed ingestion — the standard for flat-file / "SFTP" feeds.
-Contrast with Part A: COPY INTO is batch SQL; Auto Loader is a streaming source with schema evolution + rescue (next).
+✅ Takeaway: Auto Loader = incremental, checkpointed ingestion for flat-file / "SFTP" feeds. Contrast with
+Part A: COPY INTO is batch SQL; Auto Loader is a streaming source with schema evolution + rescue (next) — and
+running it as a **Job** gives you retries (Part C), scheduling, and triggers (Part E).
 
 ---
 
-## Part C — Auto Loader resilience
+## Part C — Auto Loader resilience (run via your `sftp_ingest` job)
 
-Same `bronze_sftp_eligibility` pipeline from Part B. We show the two ways Auto Loader absorbs drift.
-**Do rescued data first** (it runs on the original schema), then schema evolution (it permanently adds a column).
+Same `bronze_sftp_eligibility`. For each scenario, generate the file, then **Run now** your
+**`sftp_ingest_<you>`** job and watch the **Runs** tab. **Rescued data first** (original schema), then
+schema evolution (which permanently adds a column — and shows your retry policy in action).
 
 ### C1 — Rescued data (bad value, original schema)
 1. **`generate_data`** → scenario **`Part C - rescued data (SFTP)`** → **Run all**. Half the rows have a
    bad `eff_date` of `NOT-A-DATE`. (`eff_date` is typed `DATE` via `schemaHints`.)
-2. **`part_b_autoloader`** → **Run all**. The bad values can't cast to DATE, so Auto Loader **rescues**
-   them: the row still ingests with `eff_date = NULL`, and the original value is parked in `_rescued_data`.
-3. The last cell shows the rescued rows.
+2. **Run now** your `sftp_ingest_<you>` job. The bad values can't cast to DATE, so Auto Loader **rescues**
+   them: the row still ingests with `eff_date = NULL`, original value parked in `_rescued_data`. One clean
+   attempt — no retry needed (no schema change).
+3. Confirm: `SELECT member_id, eff_date, _rescued_data FROM <catalog>.<you>.bronze_sftp_eligibility WHERE _rescued_data IS NOT NULL;`
 
 🗣️ A malformed value didn't crash the pipeline or get silently dropped — it's captured for audit/backfill.
 
-### C2 — Schema evolution (a new column)
+### C2 — Schema evolution (a new column) — **watch the retry heal it**
 1. **`generate_data`** → scenario **`Part C - schema evolution (SFTP)`** → **Run all**. The file has a
    **new** `risk_tier` column.
-2. **`part_b_autoloader`** → **Run all**. Auto Loader detects `risk_tier`. In a notebook it **stops once**
-   to record the new column — if you see an "unknown field"/schema-change message, **just run the cell again**
-   and it succeeds, with `risk_tier` added to the table (existing rows `NULL`).
-3. `SELECT risk_tier, count(*) ... GROUP BY risk_tier` to confirm.
+2. **Run now** your `sftp_ingest_<you>` job and watch the **Runs** tab. Auto Loader detects `risk_tier`:
+   **Attempt 1 fails** (Auto Loader stops to *record* the new column), then the **retry — Attempt 2 —
+   succeeds**, with `risk_tier` added to the table (existing rows `NULL`). The fail-then-recover is visible
+   right in the run.
+3. Confirm: `SELECT risk_tier, count(*) FROM <catalog>.<you>.bronze_sftp_eligibility GROUP BY risk_tier;`
 
-🗣️ A new field appeared and the table evolved on its own. (In Part E a task **retry** makes this one-run automatic.)
+🗣️ A new field appeared and the table evolved on its own — the task **retry** turned a one-time schema
+handshake into a hands-off success. (This *is* the Part E6 retries lesson, shown live.)
 
 ---
 
@@ -226,10 +240,12 @@ Run a task once per line of business, in parallel.
 downstream can handle, not the max. See the instructor runbook for the full FAQ.
 
 ### E6 — Retries
-Notice the **Max retries = 2** you set on the `gold` task. Retries heal transient failures — and they're
-exactly what makes the Part C **schema-evolution** handshake complete in a single automated run
-(Auto Loader stops once to record the new column; the retry picks it up). Put a retry on any task that
-ingests evolving files.
+You already saw retries do real work back in **Part C2**: when the `risk_tier` column appeared, your
+`sftp_ingest` job's **Attempt 1 failed** (Auto Loader stopping to record the new column) and the **retry,
+Attempt 2, succeeded** — the schema evolved with no manual intervention. That's the **Max retries = 1** you
+set on the ingest task (and **Max retries = 2** on `gold` in E3). Retries also heal transient infra
+failures. Put a retry on any task that ingests evolving files or calls flaky external systems — then open a
+run and show the **Attempt 1 → Attempt 2** timeline.
 
 ### E7 — Incremental loading: upsert with AUTO CDC *(optional — a preview of the SDP workshop)*
 The E1 `silver_eligibility` table is **append-only**: re-send a member and you get a **duplicate** row.
