@@ -1,13 +1,13 @@
 -- Databricks notebook source
 -- MAGIC %md
--- MAGIC # Part E — silver_eligibility (Spark Declarative Pipeline source)
--- MAGIC A **streaming table** that incrementally cleans the Auto Loader bronze — upserts/append with
--- MAGIC no reload. This file is the **source for a pipeline you create in Part E** (do not "Run" it
--- MAGIC like a normal notebook).
+-- MAGIC # Part E — silver_eligibility (ETL Pipeline / Spark Declarative Pipeline source)
+-- MAGIC A **streaming table** that incrementally cleans the Auto Loader bronze — append/upsert, no reload.
 -- MAGIC
--- MAGIC When you create the pipeline, set:
--- MAGIC - **Catalog** = `dev-sh-training`, **Schema (target)** = your schema
--- MAGIC - a pipeline **Configuration** key `schema` = your schema  (referenced as `${schema}` below)
+-- MAGIC **This is the SQL you paste into the pipeline file in E1.** It uses **unqualified** table names
+-- MAGIC (just `bronze_sftp_eligibility`, not `catalog.schema.table`). Unqualified names resolve against
+-- MAGIC the pipeline's **default catalog** (`dev-sh-training`) and **default schema** (your schema),
+-- MAGIC which you set in the pipeline before running. That's how each person's pipeline reads their own
+-- MAGIC bronze and writes their own silver with the exact same code — no hard-coded names, no backticks.
 
 -- COMMAND ----------
 
@@ -22,4 +22,4 @@ AS SELECT
   try_cast(eff_date  AS DATE) AS eff_date,
   try_cast(term_date AS DATE) AS term_date,
   current_timestamp()         AS silver_loaded_at
-FROM STREAM `dev-sh-training`.`${schema}`.bronze_sftp_eligibility;
+FROM STREAM bronze_sftp_eligibility;

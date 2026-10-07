@@ -99,16 +99,36 @@ you pick what to build — **ETL Pipeline** or **Job**. Each step below tells yo
 - **E2, E3, E5** build **Jobs**.
 
 ### E1 — The silver pipeline (an ETL Pipeline / Spark Declarative Pipeline)
-This builds a streaming `silver_eligibility` table from your Auto Loader bronze.
-1. **Jobs & Pipelines** (left sidebar) → blue **Create** button → **ETL Pipeline**.
-2. Give the pipeline a **name** (e.g. `silver_eligibility_<you>`) and choose **Serverless**.
-3. **Source code:** click **Add** / **Add source code** and select `notebooks/silver_eligibility` from
-   your Git folder.
-4. **Default catalog / target schema:** Catalog = `dev-sh-training`, Schema = **your** schema.
-5. **Configuration** (in the pipeline Settings → *Advanced* → *Configuration*): add a key **`schema`**
-   with the value = **your** schema. (The source reads `${schema}` to find your bronze table.)
-6. Click **Create**, then **Run** the pipeline once → it builds `silver_eligibility` (a streaming table)
-   from `bronze_sftp_eligibility`.
+This builds a streaming `silver_eligibility` table from your Auto Loader bronze (`bronze_sftp_eligibility`).
+
+1. **Jobs & Pipelines** (left sidebar) → blue **Create** button → **ETL Pipeline**. You land in the
+   pipeline editor on a new pipeline named like *New Pipeline 2026-…*, with a starter file
+   `transformations/my_transformation.py`.
+2. **Rename the pipeline:** click its name at the top-left and change it to `silver_eligibility_<you>`.
+3. **⚠️ Set the default catalog + schema — this is how the pipeline finds *your* tables.** Open the
+   pipeline **Settings** (gear icon, or the **⋮** menu → *Settings*) and set:
+   - **Default catalog = `dev-sh-training`**
+   - **Default schema = your schema** (the one from `00_setup`)
+   - **Serverless** compute
+
+   (The editor shows a default like `… / default` near the top-right — you must change it to yours.)
+   Because the code uses the bare name `bronze_sftp_eligibility` (no catalog/schema), it resolves
+   against this default catalog + schema — so your pipeline reads *your* bronze and writes *your*
+   silver. Same code for everyone; only the default schema differs.
+4. **Add the transformation SQL.** The starter file is Python, but our logic is SQL:
+   - Right-click `my_transformation.py` → **Rename** to `silver_eligibility.sql` (or click **+** to add
+     a new `silver_eligibility.sql` and delete the empty `.py`).
+   - Open `notebooks/silver_eligibility` in your Git folder, copy the
+     `CREATE OR REFRESH STREAMING TABLE silver_eligibility …` statement, and paste it into the file.
+   - *(Optional — AI authoring: instead of pasting, click **Create with Genie Code** / **Generate** and
+     paste this prompt — then compare what it writes to the SQL in the repo before running:*
+     > "Create a streaming table in SQL named `silver_eligibility` that reads incrementally from the
+     > streaming table `bronze_sftp_eligibility`. `initcap` first_name and last_name; cast `eff_date` and
+     > `term_date` to DATE; keep `member_id`, `plan_code`, `line_of_business`; add `silver_loaded_at` as
+     > the current timestamp. Use `FROM STREAM bronze_sftp_eligibility` so it's incremental, not a reload."
+     *)*
+5. Click **Run** (▶ Run pipeline) → it builds `silver_eligibility` in your schema from
+   `bronze_sftp_eligibility`. (Part B must have run first so your bronze table exists.)
 
 ### E2 — Table-update trigger (event-driven)
 Make the silver pipeline run **automatically when new bronze data lands**.
