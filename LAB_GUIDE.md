@@ -157,8 +157,10 @@ Make the silver pipeline run **automatically whenever new bronze data lands** �
    - **Save**.
 5. **Test it:**
    - Click the **Runs** tab (next to **Tasks**, just under the job name) so you can watch runs appear.
-   - In another browser tab, run `generate_data` (scenario *Part B*) then `part_b_autoloader` so new rows
-     commit to `bronze_sftp_eligibility`.
+   - In another browser tab, run `generate_data` (scenario **Part B - SFTP source**) then
+     `part_b_autoloader` so new rows commit to `bronze_sftp_eligibility`. (Plain Part B is all you need —
+     you just want a fresh commit to fire the trigger. `risk_tier` already exists from Part C and silver
+     doesn't use it, so there's no need to re-run schema evolution here.)
    - Within ~a minute a run **shows up on the Runs tab on its own** — its origin reads *"Triggered by
      table update"* — and it refreshes `silver_eligibility`. (No one pressed Run now.)
 
