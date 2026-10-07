@@ -147,9 +147,13 @@ Make the silver pipeline run **automatically whenever new bronze data lands** �
 4. **Add the trigger** — it lives in the **right-hand panel**, not on the task:
    - In the right-side **Job details** panel, find **Schedules & Triggers** and click **Add trigger**.
    - **Trigger type:** **Table update**.
-   - **Table:** browse to `dev-sh-training` → **your schema** → **`bronze_sftp_eligibility`** and select it.
-   - Expand **Advanced** (optional) and set **minimum time between triggers = 60 seconds**. Leave the
-     condition at its default (fire when the table gets new data).
+   - **Tables:** click the table box and browse to `dev-sh-training` → **your schema** →
+     **`bronze_sftp_eligibility`**. ⚠️ Make sure it's **`bronze_sftp_eligibility`** (the Auto Loader table
+     your silver pipeline streams from) — **not** `bronze_file_eligibility` (that's Part A's COPY INTO
+     table; silver doesn't read it, so the job would fire but silver would see nothing new).
+   - **Advanced** is optional. The **Minimum time between triggers** / **Wait after last change** fields
+     are in **`hh mm`** (not seconds) — leave both at **`00h 00m`** so the job fires as soon as new data
+     lands.
    - **Save**.
 5. **Test it:** run `generate_data` (scenario *Part B*) then `part_b_autoloader` so new rows commit to
    `bronze_sftp_eligibility`. Within ~a minute the job **fires on its own** — open it and you'll see a run
