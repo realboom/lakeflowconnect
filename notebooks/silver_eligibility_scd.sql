@@ -20,8 +20,11 @@
 -- COMMAND ----------
 
 -- DBTITLE 1,Target table (declared empty; the AUTO CDC flow below populates it)
+-- delta.enableChangeDataFeed = true lets the silver_eligibility_current_audit notebook read
+-- what each run changed via table_changes() (CDF). Takes effect on a full refresh.
 CREATE OR REFRESH STREAMING TABLE silver_eligibility_current
-COMMENT 'Current eligibility — one upserted row per member_id (AUTO CDC / APPLY CHANGES)';
+COMMENT 'Current eligibility — one upserted row per member_id (AUTO CDC / APPLY CHANGES)'
+TBLPROPERTIES ('delta.enableChangeDataFeed' = 'true');
 
 -- COMMAND ----------
 

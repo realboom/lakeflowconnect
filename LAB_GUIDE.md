@@ -316,6 +316,16 @@ no full reload).
    same members — their `plan_code` has **changed in place**: same row count, **no duplicates**.
 5. **See the contrast:** the append `silver_eligibility` from E1, fed the same update, shows **two rows**
    for that member (old + new). Append vs. upsert is the core incremental-loading choice.
+6. **Validate what each run actually changed (CDF).** The pipeline only shows row *counts*, not rows —
+   so a successful upsert can look like "nothing happened." To *see* the inserts vs. updates per run, run
+   **`notebooks/silver_eligibility_current_audit`** (set your `schema`). It reads the table's **Change Data
+   Feed** and groups changes by commit version (≈ one run): the first load is all `insert`s, and after the
+   member-update run (step 3–4) you'll see `update_postimage` rows for the changed members on a **new
+   version**.
+   > ⚠️ **Needs CDF enabled on the table.** If the audit errors *"Change data feed is not enabled,"* add
+   > `TBLPROPERTIES ('delta.enableChangeDataFeed' = 'true')` to the `CREATE OR REFRESH STREAMING TABLE
+   > silver_eligibility_current` in `notebooks/silver_eligibility_scd`, then **full refresh** the
+   > `silver_upsert_<you>` pipeline and re-run the update.
 
 **The three pieces to call out:** `KEYS (member_id)` (match on the business key), `SEQUENCE BY ingested_at`
 (newest wins when a key repeats), `AUTO CDC INTO` (Databricks runs the MERGE). This is the foundation we go
