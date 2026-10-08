@@ -317,25 +317,14 @@ no full reload).
 5. **See the contrast:** the append `silver_eligibility` from E1, fed the same update, shows **two rows**
    for that member (old + new). Append vs. upsert is the core incremental-loading choice.
 6. **Validate what each run actually changed (CDF).** The pipeline only shows row *counts*, not rows — so
-   a successful upsert can look like "nothing happened." To *see* the inserts vs. updates per run, run
-   **`notebooks/silver_eligibility_current_audit`** (set your `schema`), or run this directly against your
-   schema:
-   ```sql
-   -- inserts vs. updates per run (commit version ≈ one pipeline run)
-   -- _change_type: insert | update_preimage | update_postimage | delete
-   SELECT _change_type, _commit_version, COUNT(*) AS record_count
-   FROM table_changes('silver_eligibility_current', 1)
-   WHERE _change_type <> 'update_preimage'   -- drop the "before" image so each change counts once
-   GROUP BY _change_type, _commit_version
-   ORDER BY _commit_version DESC, _change_type;
-   ```
-   The first load is all `insert`s; after the member-update run (steps 3–4) you'll see `update_postimage`
-   rows for the changed members on a **new version**.
+   a successful upsert can look like "nothing happened." Open **`notebooks/silver_eligibility_current_audit`**,
+   set your `schema`, and **Run all**. It reads the table's Change Data Feed and groups changes by commit
+   version (≈ one run): the first load is all `insert`s, and after the member-update run (steps 3–4) you'll
+   see `update_postimage` rows for the changed members on a **new version**.
    > ⚠️ **CDF has to be on the table.** `notebooks/silver_eligibility_scd` already sets
    > `TBLPROPERTIES ('delta.enableChangeDataFeed' = 'true')` on `silver_eligibility_current` — but if you
    > built the `silver_upsert_<you>` pipeline *before* that line existed, **full refresh** the pipeline
-   > once so the property takes effect. (If `table_changes(…, 1)` errors that CDF wasn't enabled at
-   > version 0, start from a later version or a `timestamp '…'` instead.)
+   > once so the property takes effect.
 
 **The three pieces to call out:** `KEYS (member_id)` (match on the business key), `SEQUENCE BY ingested_at`
 (newest wins when a key repeats), `AUTO CDC INTO` (Databricks runs the MERGE). This is the foundation we go
