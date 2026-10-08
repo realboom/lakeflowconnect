@@ -244,13 +244,45 @@ A realistic failure: someone renames a column upstream and the downstream report
 (To reset for a repeat: revert both files back to `member_count`.)
 
 ### E5 — For each (fan-out + concurrency)
-Run a task once per line of business, in parallel.
-1. **Jobs & Pipelines** → blue **Create** button → **Job** `eligibility_by_lob_<you>`. Add a **For each** task.
-   - **Inputs:** `["Commercial","Medicaid","Medicare Advantage","Individual"]`
+Run a task once per line of business, in parallel. **Read this once:** a **For each** task is a *wrapper* —
+you set the list to iterate over on the wrapper, then add the task that actually runs **inside** the loop.
+It's two levels, and the second one is easy to miss.
+
+1. **Jobs & Pipelines** (left sidebar) → blue **Create** button → **Job**. You land in the job editor on a
+   job named like *New Job 2026-…*.
+2. **Rename the job:** click its name at the top-left → `eligibility_by_lob_<you>`.
+3. **Add the For each *wrapper* task.** Click **+ Add another task type** (the blue button under "Add your
+   first task"), then set **Type** to **For each**. Fill the form:
+   - **Task name:** `for_each_lob`
+   - **Type:** **For each** (already selected)
+   - **Inputs:** replace the `[1,2,3]` placeholder with
+     `["Commercial","Medicaid","Medicare Advantage","Individual"]`
    - **Concurrency:** `4`
-2. **Add a task to loop over** → Notebook `notebooks/for_each_lob`, params `schema` = your schema and
-   **`lob` = `{{input}}`**.
-3. **Run** → four iterations run in parallel, each building `gold_elig_<lob>`.
+   - Leave **Notifications** empty.
+4. **⚠️ Add the task that runs *inside* the loop — this is the step people miss.** The For each you just
+   filled is only the wrapper; the real work goes in the dashed **"For each loop"** box on the canvas above
+   the form. Click the **`+`** *inside that dashed box* (**not** the job-level "Add task"). A new task card
+   opens:
+   - **Task name:** `build_gold_lob`
+   - **Type:** **Notebook**
+   - **Path:** `notebooks/for_each_lob` (use the **Select Notebook** navigation from the top of Part E).
+   - **Parameters** → click **Add** and create **two** key/value rows:
+     - `schema` = **your schema** (the one from `00_setup`)
+     - `lob` = `{{input}}` — the per-iteration value; the loop passes one element of **Inputs** into each
+       run. Type the double curly braces exactly (`{{input}}`), or every iteration gets the literal text
+       instead of a line of business.
+   - **Save task**.
+5. **Run now** → four iterations fan out **in parallel** (concurrency `4`), each building `gold_elig_<lob>`
+   — `gold_elig_commercial`, `gold_elig_medicaid`, `gold_elig_medicare_advantage`, `gold_elig_individual` —
+   filtered to that line of business.
+6. **See the four iterations (you have to drill in — the Runs list won't show them).** Open the **Runs**
+   tab → **click the run that's currently executing** (the active row at the top). That opens the run graph;
+   now **click the `for_each_lob` task** → the right-hand panel switches to the **For each / iterations
+   view**, showing all four iterations (one per LOB) with their individual status, each running
+   `build_gold_lob`. (At the top Runs level you only see the single parent job run — the per-LOB breakout
+   lives one level down, inside the For each task.)
+
+🗣️ One task definition, four parallel runs — fan-out keyed off a simple array, each run isolated to its own LOB.
 
 **Concurrency FAQ (you'll be asked):** concurrency is **1–100** (default 1); effective parallelism =
 `min(concurrency, # inputs)`; the workspace cap is **2,000 concurrent task runs**. Size it to what your
